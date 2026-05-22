@@ -68,30 +68,31 @@ namespace TELEMETRY_API.Controllers
             {
                 struct_measurementDataPacket logData = new struct_measurementDataPacket();
                 logData.totalGeigerCounts = int.Parse(row[0].ToString());
-                logData.geigerCountsPerMinute = int.Parse(row[1].ToString());
-                logData.geigerDose = float.Parse(row[2].ToString());
-                logData.temperature = float.Parse(row[3].ToString());
-                logData.atmPressure = float.Parse(row[4].ToString());
-                logData.altitude = float.Parse(row[5].ToString());
+                logData.geigerCountsPerSecond = float.Parse(row[1].ToString());
+		logData.geigerCountsPerMinute = int.Parse(row[2].ToString());
+                logData.geigerDose = float.Parse(row[3].ToString());
+                logData.temperature = float.Parse(row[4].ToString());
+                logData.atmPressure = float.Parse(row[5].ToString());
+                logData.altitude = float.Parse(row[6].ToString());
                 logData.accelVector = new struct_accelerationVector {
-                    ax = float.Parse(row[6].ToString()),
-                    ay = float.Parse(row[7].ToString()),
-                    az = float.Parse(row[8].ToString()),
+                    ax = float.Parse(row[7].ToString()),
+                    ay = float.Parse(row[8].ToString()),
+                    az = float.Parse(row[9].ToString()),
                 };
                 logData.gyroVector = new struct_gyroscopeVector
                 {
-                    gx = float.Parse(row[9].ToString()),
-                    gy = float.Parse(row[10].ToString()),
-                    gz = float.Parse(row[11].ToString()),
+                    gx = float.Parse(row[10].ToString()),
+                    gy = float.Parse(row[11].ToString()),
+                    gz = float.Parse(row[12].ToString()),
                 };
                 logData.magneticFieldVector = new struct_magneticFieldVector
                 {
-                    mx = float.Parse(row[12].ToString()),
-                    my = float.Parse(row[13].ToString()),
-                    mz = float.Parse(row[14].ToString()),
+                    mx = float.Parse(row[13].ToString()),
+                    my = float.Parse(row[14].ToString()),
+                    mz = float.Parse(row[15].ToString()),
                 };
-                logData.headingFloat = float.Parse(row[15].ToString());
-                logData.gyroChipTemperature = float.Parse(row[16].ToString());
+                logData.headingFloat = float.Parse(row[16].ToString());
+                logData.gyroChipTemperature = float.Parse(row[17].ToString());
 
                 missionLOGS.Add(logData);
             }
@@ -135,12 +136,12 @@ namespace TELEMETRY_API.Controllers
         }
 
         [HttpPost("storeMeasurementRecord")]
-        public IActionResult DBStoreMeasurementRec([FromBody] _struct_measurementDataPacket packageJSON)
+        public IActionResult DBStoreMeasurementRec([FromBody] _struct_arduinoMeasurementDataPacket packageJSON)
         {
             int rowsAffected = DBHandlerEngine.PGSQLRunNonQuery($"CALL LOG_TELEMETRY_RECORD(" +
                 $"1," +
                 $"{packageJSON.totalGeigerCounts}," +
-                $"{packageJSON.geigerCountsPerMinute}," +
+                $"{packageJSON.geigerCountsPerSecond}," +
                 $"{packageJSON.temperature}," +
                 $"{packageJSON.atmPressure}," +
                 $"{packageJSON.altitude}," +

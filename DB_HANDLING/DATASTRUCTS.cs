@@ -35,7 +35,8 @@ namespace TELEMETRY_API.DB_HANDLING
         public struct struct_measurementDataPacket
         {
             public int totalGeigerCounts { get; set; }
-            public int geigerCountsPerMinute { get; set; }
+            public float geigerCountsPerSecond { get; set; }
+	    public int geigerCountsPerMinute { get; set; }
             public float geigerDose { get; set; }
             public float temperature { get; set; }
             public float atmPressure { get; set; }
@@ -47,10 +48,10 @@ namespace TELEMETRY_API.DB_HANDLING
             public float gyroChipTemperature { get; set; }
         }
 
-        public struct _struct_measurementDataPacket
+        public struct _struct_arduinoMeasurementDataPacket
         {
             public int totalGeigerCounts { get; set; }
-            public int geigerCountsPerMinute { get; set; }
+            public int geigerCountsPerSecond { get; set; }
             public float geigerDose { get; set; }
             public float temperature { get; set; }
             public float atmPressure { get; set; }
