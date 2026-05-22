@@ -1,0 +1,16 @@
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('MISSION_1', '2026-05-14 23:12:02.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('2', '2026-05-15 00:00:56.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('2', '2026-05-15 00:01:05.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('TEST_MISSION', '2026-05-15 15:07:35.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('1', '2026-05-15 15:10:31.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('asdasdasd', '2026-05-15 15:12:15.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('1asdasdas', '2026-05-15 15:13:06.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('asdasdas', '2026-05-15 15:13:31.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('asdasdas', '2026-05-15 15:19:43.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('asdasdas', '2026-05-15 15:19:53.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('asdasdas', '2026-05-15 15:20:02.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('sagsadgfasdf', '2026-05-15 15:20:19.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('asdasdas', '2026-05-15 15:28:47.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('asdasdas', '2026-05-15 15:29:13.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('1', '2026-05-21 22:54:47.000000 +00:00');
+INSERT INTO public.telemetry_missions (mission_name, mission_start_timestamp) VALUES ('MISSION_1', '2026-05-21 22:55:07.000000 +00:00');
