@@ -135,7 +135,7 @@ namespace TELEMETRY_API.Controllers
         }
 
         [HttpPost("storeMeasurementRecord")]
-        public IActionResult DBStoreMeasurementRec([FromBody] struct_measurementDataPacket packageJSON)
+        public IActionResult DBStoreMeasurementRec([FromBody] _struct_measurementDataPacket packageJSON)
         {
             int rowsAffected = DBHandlerEngine.PGSQLRunNonQuery($"CALL LOG_TELEMETRY_RECORD(" +
                 $"1," +
