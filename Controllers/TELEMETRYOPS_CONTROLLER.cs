@@ -69,7 +69,7 @@ namespace TELEMETRY_API.Controllers
                 struct_measurementDataPacket logData = new struct_measurementDataPacket();
                 logData.totalGeigerCounts = int.Parse(row[0].ToString());
                 logData.geigerCountsPerSecond = float.Parse(row[1].ToString());
-		logData.geigerCountsPerMinute = int.Parse(row[2].ToString());
+		        logData.geigerCountsPerMinute = int.Parse(row[2].ToString());
                 logData.geigerDose = float.Parse(row[3].ToString());
                 logData.temperature = float.Parse(row[4].ToString());
                 logData.atmPressure = float.Parse(row[5].ToString());
@@ -151,9 +151,9 @@ namespace TELEMETRY_API.Controllers
                 $"{packageJSON.gyroVector.gx}," +
                 $"{packageJSON.gyroVector.gy}," +
                 $"{packageJSON.gyroVector.gz}," +
-                $"1," +
-                $"1," +
-                $"1," +
+                $"{packageJSON.magneticFieldVector.mx}," +
+                $"{packageJSON.magneticFieldVector.my}," +
+                $"{packageJSON.magneticFieldVector.mz}," +
                 $"{packageJSON.gyroChipTemperature});");
 
             return Ok($"{{ \"rowsAffected\": {rowsAffected} }}");

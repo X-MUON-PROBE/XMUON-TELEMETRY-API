@@ -36,7 +36,7 @@ namespace TELEMETRY_API.DB_HANDLING
         {
             public int totalGeigerCounts { get; set; }
             public float geigerCountsPerSecond { get; set; }
-	    public int geigerCountsPerMinute { get; set; }
+	        public int geigerCountsPerMinute { get; set; }
             public float geigerDose { get; set; }
             public float temperature { get; set; }
             public float atmPressure { get; set; }
@@ -58,6 +58,7 @@ namespace TELEMETRY_API.DB_HANDLING
             public float altitude { get; set; }
             public struct_accelerationVector accelVector { get; set; }
             public struct_gyroscopeVector gyroVector { get; set; }
+            public struct_magneticFieldVector magneticFieldVector { get; set; }
             public float gyroChipTemperature { get; set; }
         }
 
