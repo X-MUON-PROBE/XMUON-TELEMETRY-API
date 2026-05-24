@@ -120,3 +120,19 @@ AS $$
         WHERE RECORD_MISSION_ID = MISSION_ID;
     END;
 $$;
+
+CREATE OR REPLACE PROCEDURE GET_DATABASE_SIZE(STORAGE_UNIT VARCHAR(2))
+LANGUAGE plpgsql
+AS $$
+    BEGIN
+        CASE
+            WHEN STORAGE_UNIT = 'KB' THEN
+                RAISE NOTICE '% KB', pg_database_size('XMUONPROBE-MISSIONDB') / 1024;
+            WHEN STORAGE_UNIT = 'MB' THEN
+                RAISE NOTICE '% MB', pg_database_size('XMUONPROBE-MISSIONDB') / power(1024, 2);
+            when STORAGE_UNIT = 'GB' THEN
+                RAISE NOTICE '% GB', pg_database_size('XMUONPROBE-MISSIONDB') / power(1024, 3);
+            ELSE RAISE WARNING 'BAD STORAGE_UNIT ARGUMENT. STORAGE_UNIT SUPPORTS THE FOLLOWING TAGS: "KB", "MB" AND "GB"';
+        END CASE;
+    END;
+$$;
