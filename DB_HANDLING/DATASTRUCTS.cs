@@ -46,6 +46,7 @@ namespace TELEMETRY_API.DB_HANDLING
             public struct_magneticFieldVector magneticFieldVector { get; set; }
             public float headingFloat { get; set; }
             public float gyroChipTemperature { get; set; }
+	    public DateTime logTimestamp { get; set; }
         }
 
         public struct _struct_arduinoMeasurementDataPacket

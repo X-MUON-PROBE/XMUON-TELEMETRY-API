@@ -115,7 +115,8 @@ AS $$
                magnetic_field_y,
                magnetic_field_z,
                heading_deg,
-               gyro_chip_temperature
+               gyro_chip_temperature,
+               RECORD_TIMESTAMP
         FROM TELEMETRY_RECORDS
         WHERE RECORD_MISSION_ID = MISSION_ID;
     END;

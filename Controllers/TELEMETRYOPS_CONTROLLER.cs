@@ -93,6 +93,7 @@ namespace TELEMETRY_API.Controllers
                 };
                 logData.headingFloat = float.Parse(row[16].ToString());
                 logData.gyroChipTemperature = float.Parse(row[17].ToString());
+		logData.logTimestamp = DateTime.Parse(row[18].ToString());
 
                 missionLOGS.Add(logData);
             }
