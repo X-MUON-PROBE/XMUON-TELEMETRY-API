@@ -1,3 +1,5 @@
+using TELEMETRY_API.SignalR;
+
 namespace TELEMETRY_API
 {
     public class Program
@@ -26,6 +28,7 @@ namespace TELEMETRY_API
 
             // Add services to the container.
             builder.Services.AddControllers();
+	    builder.Services.AddSignalR();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -47,6 +50,8 @@ namespace TELEMETRY_API
             app.UseAuthorization();
 
             app.MapControllers();
+
+	    app.MapHub<MissionsDashboardWSSHub>("/fileDashboardDataChannel");
 
             app.Run();
         }
