@@ -46,6 +46,7 @@ namespace TELEMETRY_API.Controllers
                 missionData.MISSION_ID = int.Parse(row[0].ToString());
                 missionData.MISSION_NAME = row[1].ToString();
                 missionData.MISSION_START_TIMESTAMP = DateTime.Parse(row[2].ToString());
+                missionData.MISSION_ACTIVENESS_STATE = bool.Parse(row[3].ToString());
 
                 missionList.Add(missionData);
             }

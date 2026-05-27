@@ -9,6 +9,7 @@ namespace TELEMETRY_API.DB_HANDLING
             public int MISSION_ID { get; set; }
             public string MISSION_NAME { get; set; }
             public DateTime MISSION_START_TIMESTAMP { get; set; }
+            public bool MISSION_ACTIVENESS_STATE { get; set; }
         }
 
         public struct struct_accelerationVector
