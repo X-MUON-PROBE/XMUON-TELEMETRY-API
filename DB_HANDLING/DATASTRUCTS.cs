@@ -52,6 +52,7 @@ namespace TELEMETRY_API.DB_HANDLING
 
         public struct _struct_arduinoMeasurementDataPacket
         {
+	    public int missionID { get; set; }
             public int totalGeigerCounts { get; set; }
             public int geigerCountsPerSecond { get; set; }
             public float geigerDose { get; set; }

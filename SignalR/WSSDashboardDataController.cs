@@ -9,6 +9,7 @@ namespace TELEMETRY_API.SignalR
         public async Task SendData(struct_measurementDataPacket newMeasurementPacket, string TargetConnectionId)
         {
             await Clients.Client(TargetConnectionId).SendAsync("ReceiveDashboardUpdate", newMeasurementPacket);
+	    Console.WriteLine("dsfsadfsadf");
         }
 
         public override async Task OnConnectedAsync()
