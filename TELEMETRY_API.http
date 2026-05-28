@@ -6,5 +6,10 @@ Accept: application/json
 ###
 
 
-GET http://192.168.105.227/api/establishConnection
+GET http://192.168.105.227/api/testConnection
+Accept: application/json
+
+###
+
+GET http://192.168.105.227/api/establishConnection?missionID=1
 Accept: application/json

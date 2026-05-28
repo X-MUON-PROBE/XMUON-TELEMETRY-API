@@ -7,16 +7,18 @@ AS $$
     BEGIN
         INSERT INTO TELEMETRY_MISSIONS (
              MISSION_NAME,
-             MISSION_START_TIMESTAMP
+             MISSION_START_TIMESTAMP,
+            mission_activeness_state
         )
         VALUES (
           _MISSION_NAME,
-          _MISSION_START_TIMESTAMP
+          _MISSION_START_TIMESTAMP,
+          true
          );
     END
 $$;
 
-CREATE OR REPLACE PROCEDURE LOG_TELEMETRY_RECORD(
+CREATE OR REPLACE PROCEDURE LOG_TELEMETRY_RECORD (
     _RECORD_MISSION_ID INT,
     _TOTAL_GEIGER_COUNTS INT,
     _GEIGER_COUNTS_PER_MINUTE INT,
@@ -36,12 +38,14 @@ CREATE OR REPLACE PROCEDURE LOG_TELEMETRY_RECORD(
 )
 LANGUAGE plpgsql
 AS $$
-    DECLARE _GEIGER_DOSE FLOAT; _GEIGER_ACTIVITY FLOAT; _HEADING_RAD FLOAT; _HEADING_DEG FLOAT;
+    DECLARE _GEIGER_DOSE FLOAT; _GEIGER_ACTIVITY FLOAT; _AIR_DENSITY FLOAT; _HEADING_RAD FLOAT; _HEADING_DEG FLOAT; _R_SPECIFIC INT;
     BEGIN
+        _R_SPECIFIC := 287;
         _GEIGER_ACTIVITY :=  _GEIGER_COUNTS_PER_MINUTE / 60.0;
         _GEIGER_DOSE := _GEIGER_COUNTS_PER_MINUTE * 0.00812;
         _HEADING_RAD := ATAN2(_MAGNETIC_FIELD_Y, _MAGNETIC_FIELD_X);
         _HEADING_DEG := (_HEADING_RAD * 180) / PI();
+        _AIR_DENSITY := _ATM_PRESSURE / (_R_SPECIFIC * (_TEMPERATURE + 273.15));
 
         INSERT INTO TELEMETRY_RECORDS
         (
@@ -63,7 +67,8 @@ AS $$
          MAGNETIC_FIELD_Y,
          MAGNETIC_FIELD_Z,
          HEADING_DEG,
-         GYRO_CHIP_TEMPERATURE
+         GYRO_CHIP_TEMPERATURE,
+         AIR_DENSITY
         )
         VALUES
         (
@@ -85,12 +90,44 @@ AS $$
          _MAGNETIC_FIELD_Y,
          _MAGNETIC_FIELD_Z,
          _HEADING_DEG,
-         _GYRO_CHIP_TEMPERATURE
+         _GYRO_CHIP_TEMPERATURE,
+         _AIR_DENSITY
         );
     END
 $$;
 
-CREATE OR REPLACE PROCEDURE GET_MISSION_DATA(
+CREATE OR REPLACE PROCEDURE CREATE_NEW_DASHBOARD_CONNEXION (
+    _MISSION_ID INT,
+    _SIGNALR_CONNEXION_ID VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+BEGIN
+    INSERT INTO DASHBOARD_WSS_CONNEXIONS (
+      MISSION_ID,
+      SIGNALR_CONNEXION_ID,
+      CONEXION_ESTABLISHMENT_TIMESTAMP
+    )
+    VALUES (
+        _MISSION_ID,
+        _SIGNALR_CONNEXION_ID,
+        NOW()
+   );
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE DELETE_DASHBOARD_CONNEXION (_CONNEXION_ID VARCHAR(100))
+LANGUAGE plpgsql
+AS $$
+DECLARE
+BEGIN
+    DELETE FROM dashboard_wss_connexions
+           WHERE signalr_connexion_id = _connexion_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE GET_MISSION_DATA (
     MISSION_ID INT,
     INOUT result_set REFCURSOR  -- Add an INOUT parameter for the cursor
 )
@@ -117,14 +154,72 @@ AS $$
                magnetic_field_z,
                heading_deg,
                gyro_chip_temperature,
-               RECORD_TIMESTAMP
+               RECORD_TIMESTAMP,
+               AIR_DENSITY
         FROM TELEMETRY_RECORDS
         WHERE RECORD_MISSION_ID = MISSION_ID;
     END;
 $$;
 
+CREATE OR REPLACE PROCEDURE CALC_TEMP_ATMPRESS_OVER_ALTITUDE_DISTRIBUTION (
+    _MISSION_ID INT,
+    INOUT result_set REFCURSOR  -- Add an INOUT parameter for the cursor
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+BEGIN
+    OPEN result_set FOR
+    SELECT
+        ALTITUDE AS ALTITUDE_CLASS,
+        AVG(temperature) AS AVG_ALT_TEMPERATURE,
+        AVG(atm_pressure) AS AVG_ALT_ATM_PRESSURE
+    FROM telemetry_records
+    WHERE _MISSION_ID = record_mission_id
+    GROUP BY ALTITUDE
+    ORDER BY ALTITUDE ASC;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE CALC_NUMERIC_GEIGER_STATS (
+    _MISSION_ID INT,
+    INOUT result_set REFCURSOR  -- Add an INOUT parameter for the cursor
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+BEGIN
+    OPEN result_set FOR
+    SELECT MAX(total_geiger_counts) AS TOTAL_GEIGER_COUNTS,
+           AVG(geiger_counts_per_second) AS AVG_ACTIVITY,
+           MAX(geiger_counts_per_second) AS MAX_ACTIVITY,
+           MAX(geiger_dose) AS MAX_GEIGER_DOSE
+    FROM telemetry_records
+    WHERE record_mission_id = _MISSION_ID;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE CALC_NUMERIC_ATM_STATS (
+    _MISSION_ID INT,
+    INOUT result_set REFCURSOR  -- Add an INOUT parameter for the cursor
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+BEGIN
+    OPEN result_set FOR
+    SELECT MAX(altitude) AS MAX_ALTITUDE,
+           MAX(temperature) AS MAX_TEMPERATURE,
+           MIN(temperature) AS MIN_TEMPERATURE,
+           MAX(atm_pressure) AS MAX_PRESSURE,
+           MIN(atm_pressure) AS MIN_PRESSURE
+    FROM telemetry_records
+    WHERE record_mission_id = _MISSION_ID;
+END;
+$$;
+
 CREATE OR REPLACE PROCEDURE GET_ACTIVE_MISSION_DASHBOARD_CONNEXIONS(
-    _MISSION_NAME VARCHAR(50),
+    _MISSION_ID INT,
     INOUT result_set REFCURSOR  -- Add an INOUT parameter for the cursor
 )
 LANGUAGE plpgsql
@@ -133,12 +228,10 @@ DECLARE
 BEGIN
     OPEN result_set FOR
     SELECT DASHBOARD_WSS_CONNEXIONS.MISSION_ID,
-           TELEMETRY_MISSIONS.mission_name,
            signalr_connexion_id,
            CONEXION_ESTABLISHMENT_TIMESTAMP
     FROM DASHBOARD_WSS_CONNEXIONS
-    INNER JOIN TELEMETRY_MISSIONS ON telemetry_missions.mission_id = DASHBOARD_WSS_CONNEXIONS.mission_id
-    WHERE TELEMETRY_MISSIONS.MISSION_NAME = _MISSION_NAME;
+    WHERE dashboard_wss_connexions.mission_id = _MISSION_ID;
 END
 $$;
 

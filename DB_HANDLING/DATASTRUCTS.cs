@@ -12,6 +12,30 @@ namespace TELEMETRY_API.DB_HANDLING
             public bool MISSION_ACTIVENESS_STATE { get; set; }
         }
 
+        public struct struct_tempAndATMPressureDist
+        {
+            public float temperature { get; set; }
+            public float atmPressure { get; set; }
+            public float altitude { get; set; }
+        }
+
+        public struct struct_numericGeigerStats
+        {
+            public int TOTAL_GEIGER_COUNTS { get; set; }
+            public float AVG_ACTIVITY { get; set; }
+            public float MAX_ACTIVITY { get; set; }
+            public float MAX_GEIGER_DOSE { get; set; }
+        }
+
+        public struct struct_numericAtmStats
+        {
+            public float MAX_ALTITUDE { get; set; }
+            public float MAX_TEMPERATURE { get; set; }
+            public float MIN_TEMPERATURE { get; set; }
+            public float MAX_PRESSURE { get; set; }
+            public float MIN_PRESSURE { get; set; }
+        }
+
         public struct struct_accelerationVector
         {
             public float ax { get; set; }
@@ -41,18 +65,19 @@ namespace TELEMETRY_API.DB_HANDLING
             public float geigerDose { get; set; }
             public float temperature { get; set; }
             public float atmPressure { get; set; }
+            public float airDensity { get; set; }
             public float altitude { get; set; }
             public struct_accelerationVector accelVector { get; set; }
             public struct_gyroscopeVector gyroVector { get; set; }
             public struct_magneticFieldVector magneticFieldVector { get; set; }
             public float headingFloat { get; set; }
             public float gyroChipTemperature { get; set; }
-	    public DateTime logTimestamp { get; set; }
+	        public DateTime logTimestamp { get; set; }
         }
 
         public struct _struct_arduinoMeasurementDataPacket
         {
-	    public int missionID { get; set; }
+	        public int missionID { get; set; }
             public int totalGeigerCounts { get; set; }
             public int geigerCountsPerSecond { get; set; }
             public float geigerDose { get; set; }
@@ -69,6 +94,9 @@ namespace TELEMETRY_API.DB_HANDLING
         {
             public struct_mission missionData { get; set; }
             public List<struct_measurementDataPacket> missionMeasurementRecords { get; set; }
+            public List<struct_tempAndATMPressureDist> tempAndATMPressureDistribution { get; set; }
+            public struct_numericGeigerStats numericGeigerStats { get; set; }
+            public struct_numericAtmStats numericAtmStats { get; set; }
         }
     }
 }

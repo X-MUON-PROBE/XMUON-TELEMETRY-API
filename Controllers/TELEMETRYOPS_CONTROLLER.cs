@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Npgsql;
 using System.Data;
 using TELEMETRY_API.DB_HANDLING;
 using static TELEMETRY_API.DB_HANDLING.DATASTRUCTS;
@@ -13,7 +12,7 @@ namespace TELEMETRY_API.Controllers
     public class TELEMETRYOPS_CONTROLLER : Controller
     {
         DB_HANDLER DBHandlerEngine;
-	private readonly IHubContext<MissionsDashboardWSSHub> _hubContext;
+	    private readonly IHubContext<MissionsDashboardWSSHub> _hubContext;
 
         public TELEMETRYOPS_CONTROLLER(IHubContext<MissionsDashboardWSSHub> hubContext)
         {
@@ -36,7 +35,16 @@ namespace TELEMETRY_API.Controllers
                 $"'{DateTime.Now.Date.Day}/{DateTime.Now.Date.Month}/{DateTime.Now.Date.Year} {DateTime.Now.TimeOfDay.Hours}:{DateTime.Now.TimeOfDay.Minutes}:{DateTime.Now.TimeOfDay.Seconds}'" +
                 $");");
 
-            return Ok($"{{ \"rowsAffected\": {rowsAffected} }}");
+            DataTable updatedMissionList = DBHandlerEngine.PGSQLRunQuery("SELECT * FROM VW_MISSIONS;");
+
+            int missionID;
+
+            if (!int.TryParse(updatedMissionList.Rows[updatedMissionList.Rows.Count - 1][0].ToString(), out missionID))
+            {
+                return BadRequest("Failed to retrieve the new mission ID after insertion.");
+            }
+
+            return Ok($"{{ \"rowsAffected\": {rowsAffected}, \"missionID\": {missionID} }}");
         }
 
         [HttpGet("getMissionList/")]
@@ -99,7 +107,8 @@ namespace TELEMETRY_API.Controllers
                 };
                 logData.headingFloat = float.Parse(row[16].ToString());
                 logData.gyroChipTemperature = float.Parse(row[17].ToString());
-		logData.logTimestamp = DateTime.Parse(row[18].ToString());
+		        logData.logTimestamp = DateTime.Parse(row[18].ToString());
+                logData.airDensity = float.Parse(row[19].ToString());
 
                 missionLOGS.Add(logData);
             }
@@ -130,12 +139,56 @@ namespace TELEMETRY_API.Controllers
                 }
             }
 
+            DataTable tempAndATMPressOverAltitudeDist = DBHandlerEngine.PGSQLRunQuery($"BEGIN TRANSACTION;" +
+                $"CALL CALC_TEMP_ATMPRESS_OVER_ALTITUDE_DISTRIBUTION({missionID}, 'CURSOR');" +
+                $"FETCH ALL FROM \"CURSOR\";" +
+                $"COMMIT;", true);
+
+            List<struct_tempAndATMPressureDist> distibution = new List<struct_tempAndATMPressureDist>();
+
+            foreach (DataRow row in tempAndATMPressOverAltitudeDist.Rows)
+            {
+                struct_tempAndATMPressureDist distData = new struct_tempAndATMPressureDist();
+                distData.altitude = float.Parse(row[0].ToString());
+                distData.temperature = float.Parse(row[1].ToString());
+                distData.atmPressure = float.Parse(row[2].ToString());
+                distibution.Add(distData);
+            }
+
+            DataTable numericGeigerStats = DBHandlerEngine.PGSQLRunQuery($"BEGIN TRANSACTION;" +
+                $"CALL CALC_NUMERIC_GEIGER_STATS({missionID}, 'CURSOR');" +
+                $"FETCH ALL FROM \"CURSOR\";" +
+                $"COMMIT;", true);
+
+            struct_numericGeigerStats StructNumericGeigerStats = new struct_numericGeigerStats();
+
+            StructNumericGeigerStats.TOTAL_GEIGER_COUNTS = int.Parse((numericGeigerStats.Rows[0])[0].ToString());
+            StructNumericGeigerStats.AVG_ACTIVITY = float.Parse((numericGeigerStats.Rows[0])[1].ToString());
+            StructNumericGeigerStats.MAX_ACTIVITY = float.Parse((numericGeigerStats.Rows[0])[2].ToString());
+            StructNumericGeigerStats.MAX_GEIGER_DOSE = float.Parse((numericGeigerStats.Rows[0])[3].ToString());
+
+            DataTable numericAtmStatsTable = DBHandlerEngine.PGSQLRunQuery($"BEGIN TRANSACTION;" +
+                $"CALL CALC_NUMERIC_ATM_STATS({missionID}, 'CURSOR');" +
+                $"FETCH ALL FROM \"CURSOR\";" +
+                $"COMMIT;", true);
+
+            struct_numericAtmStats StructNumericAtmStats = new struct_numericAtmStats();
+
+            StructNumericAtmStats.MAX_ALTITUDE = float.Parse((numericAtmStatsTable.Rows[0])[0].ToString());
+            StructNumericAtmStats.MAX_TEMPERATURE = float.Parse((numericAtmStatsTable.Rows[0])[1].ToString());
+            StructNumericAtmStats.MIN_TEMPERATURE = float.Parse((numericAtmStatsTable.Rows[0])[2].ToString());
+            StructNumericAtmStats.MAX_PRESSURE = float.Parse((numericAtmStatsTable.Rows[0])[3].ToString());
+            StructNumericAtmStats.MIN_PRESSURE = float.Parse((numericAtmStatsTable.Rows[0])[4].ToString());
+
             if (foundMatch)
             {
                 missionDataPackage = new mission_dataPackage
                 {
                     missionData = targetMission,
-                    missionMeasurementRecords = missionLOGS
+                    missionMeasurementRecords = missionLOGS,
+                    tempAndATMPressureDistribution = distibution,
+                    numericGeigerStats = StructNumericGeigerStats,
+                    numericAtmStats = StructNumericAtmStats
                 };
             }
 
@@ -164,70 +217,44 @@ namespace TELEMETRY_API.Controllers
                 $"{packageJSON.gyroChipTemperature});");
 
 
-		DataTable LAST_LOG = DBHandlerEngine.PGSQLRunQuery($"BEGIN TRANSACTION; CALL GET_MISSION_DATA ('{packageJSON.missionID}', 'cursor'); FETCH ALL FROM \"cursor\"; COMMIT;", true);
+		    DataTable LAST_LOG = DBHandlerEngine.PGSQLRunQuery($"BEGIN TRANSACTION; CALL GET_MISSION_DATA ('{packageJSON.missionID}', 'cursor'); FETCH ALL FROM \"cursor\"; COMMIT;", true);
 
-                struct_measurementDataPacket logData = new struct_measurementDataPacket();
-                logData.totalGeigerCounts = int.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][0].ToString());
-                logData.geigerCountsPerSecond = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][1].ToString());
-		        logData.geigerCountsPerMinute = int.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][2].ToString());
-                logData.geigerDose = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][3].ToString());
-                logData.temperature = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][4].ToString());
-                logData.atmPressure = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][5].ToString());
-                logData.altitude = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][6].ToString());
-                logData.accelVector = new struct_accelerationVector {
-                    ax = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][7].ToString()),
-                    ay = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][8].ToString()),
-                    az = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][9].ToString()),
-                };
-                logData.gyroVector = new struct_gyroscopeVector
-                {
-                    gx = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][10].ToString()),
-                    gy = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][11].ToString()),
-                    gz = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][12].ToString()),
-                };
-                logData.magneticFieldVector = new struct_magneticFieldVector
-                {
-                    mx = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][13].ToString()),
-                    my = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][14].ToString()),
-                    mz = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][15].ToString()),
-                };
-                logData.headingFloat = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][16].ToString());
-                logData.gyroChipTemperature = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][17].ToString());
-		logData.logTimestamp = DateTime.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][18].ToString());
+            struct_measurementDataPacket logData = new struct_measurementDataPacket();
+            logData.totalGeigerCounts = int.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][0].ToString());
+            logData.geigerCountsPerSecond = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][1].ToString());
+		    logData.geigerCountsPerMinute = int.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][2].ToString());
+            logData.geigerDose = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][3].ToString());
+            logData.temperature = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][4].ToString());
+            logData.atmPressure = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][5].ToString());
+            logData.altitude = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][6].ToString());
+            logData.accelVector = new struct_accelerationVector {
+                ax = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][7].ToString()),
+                ay = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][8].ToString()),
+                az = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][9].ToString()),
+            };
+            logData.gyroVector = new struct_gyroscopeVector
+            {
+                gx = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][10].ToString()),
+                gy = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][11].ToString()),
+                gz = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][12].ToString()),
+            };
+            logData.magneticFieldVector = new struct_magneticFieldVector
+            {
+                mx = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][13].ToString()),
+                my = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][14].ToString()),
+                mz = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][15].ToString()),
+            };
+            logData.headingFloat = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][16].ToString());
+            logData.gyroChipTemperature = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][17].ToString());
+		    logData.logTimestamp = DateTime.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][18].ToString());
+            logData.airDensity = float.Parse(LAST_LOG.Rows[LAST_LOG.Rows.Count - 1][19].ToString());
 
-	    /*struct_measurementDataPacket newMP = new struct_measurementDataPacket {
-		    totalGeigerCounts = packageJSON.totalGeigerCounts,
-		    geigerCountsPerSecond = packageJSON.geigerCountsPerSecond,
-		    temperature = packageJSON.temperature,
-		    atmPressure = packageJSON.atmPressure,
-		    altitude = packageJSON.altitude,
-		    accelVector = new struct_accelerationVector {
-			    ax = packageJSON.accelVector.ax,
-			    ay = packageJSON.accelVector.ay,
-			    az = packageJSON.accelVector.az
-		    },
-		    gyroVector = new struct_gyroscopeVector {
-			    gx = packageJSON.gyroVector.gx,
-			    gy = packageJSON.gyroVector.gy,
-			    gz = packageJSON.gyroVector.gz
-		    },
-		    magneticFieldVector = new struct_magneticFieldVector {
-			    mx = packageJSON.magneticFieldVector.mx,
-			    my = packageJSON.magneticFieldVector.my,
-			    mz = packageJSON.magneticFieldVector.mz
-		    },
-		    
-	    };*/
+            DataTable activeConnexions = DBHandlerEngine.PGSQLRunQuery($"BEGIN TRANSACTION; CALL GET_ACTIVE_MISSION_DASHBOARD_CONNEXIONS ({packageJSON.missionID}, 'cursor'); FETCH ALL FROM \"cursor\"; COMMIT;", true);
 
-		DataTable activeConnexions = DBHandlerEngine.PGSQLRunQuery($"BEGIN TRANSACTION; CALL GET_ACTIVE_MISSION_DASHBOARD_CONNEXIONS ('${packageJSON.missionID}', 'cursor'); FETCH ALL FROM \"cursor\"; COMMIT;", true);
-
-		foreach (DataRow row in activeConnexions.Rows)
-		{
-			await _hubContext.Clients.Client(row[2].ToString()).SendAsync("ReceiveDashboardUpdate", logData, row[2].ToString());
-		}
-
-		Console.WriteLine("HELLO WORLD!!!");
-
+		    foreach (DataRow row in activeConnexions.Rows)
+		    {
+                await _hubContext.Clients.Client(row[1].ToString()).SendAsync("ReceiveDashboardUpdate", logData);
+            }
 		
             return Ok($"{{ \"rowsAffected\": {rowsAffected} }}");
         }
