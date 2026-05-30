@@ -1,6 +1,5 @@
 CREATE OR REPLACE PROCEDURE INSERT_MISSION_RECORD(
-    _MISSION_NAME VARCHAR(50),
-    _MISSION_START_TIMESTAMP TIMESTAMPTZ)
+    _MISSION_NAME VARCHAR(50))
 LANGUAGE plpgsql
 AS $$
     DECLARE
@@ -12,7 +11,7 @@ AS $$
         )
         VALUES (
           _MISSION_NAME,
-          _MISSION_START_TIMESTAMP,
+          NOW(),
           true
          );
     END

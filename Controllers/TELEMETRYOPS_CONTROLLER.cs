@@ -31,9 +31,8 @@ namespace TELEMETRY_API.Controllers
         public IActionResult DBInitMission([FromRoute] string missionName)
         {
             int rowsAffected = DBHandlerEngine.PGSQLRunNonQuery($"CALL INSERT_MISSION_RECORD(" +
-                $"'{missionName}'," +
-                $"'{DateTime.Now.Date.Day}/{DateTime.Now.Date.Month}/{DateTime.Now.Date.Year} {DateTime.Now.TimeOfDay.Hours}:{DateTime.Now.TimeOfDay.Minutes}:{DateTime.Now.TimeOfDay.Seconds}'" +
-                $");");
+                $"'{missionName}'" +
+		$");");
 
             DataTable updatedMissionList = DBHandlerEngine.PGSQLRunQuery("SELECT * FROM VW_MISSIONS;");
 
